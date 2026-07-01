@@ -1,0 +1,90 @@
+# Add this to the FORK repo: hd-brite/documenso/.github/workflows/publish_brite_documenso.yml
+#
+# Builds the Documenso fork image and pushes it to BOTH Brite ACRs with an
+# IMMUTABLE tag (release tag + commit SHA - never a re-pushed mutable tag), so
+# the deployment can pin a digest and rollback/verify works. Mirrors the intent
+# of hd-brite/chatwoot's publish_brite_docker.yml, minus the mutable :vX-brite.1.
+#
+# Prerequisites in the fork (one-time, GitHub settings):
+#   - Settings -> Actions -> General: enable Actions (forks disable them by default).
+#   - Settings -> Secrets and variables -> Actions, add:
+#       ACR_DEV_USERNAME, ACR_DEV_PASSWORD   (briteregistrydevelopment admin creds)
+#       ACR_PROD_USERNAME, ACR_PROD_PASSWORD (briteregistryproduction admin creds)
+#     Get them with:
+#       az acr credential show --name briteregistrydevelopment  --query "{u:username,p:passwords[0].value}"
+#       az acr credential show --name briteregistryproduction   --query "{u:username,p:passwords[0].value}"
+#
+# Trigger: push a tag like `v2.14.0-brite.1`, or run manually (workflow_dispatch)
+# with the tag to stamp. The image is tagged `<tag>` and `<tag>-<shortsha>`.
+
+name: Publish Brite Documenso image
+
+on:
+  push:
+    tags:
+      - "v*-brite.*"
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Immutable image tag to publish (e.g. v2.14.0-brite.1)"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+
+      - name: Resolve tag + short SHA
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.image_tag }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to dev ACR
+        uses: docker/login-action@v3
+        with:
+          registry: briteregistrydevelopment.azurecr.io
+          username: ${{ secrets.ACR_DEV_USERNAME }}
+          password: ${{ secrets.ACR_DEV_PASSWORD }}
+
+      - name: Log in to prod ACR
+        uses: docker/login-action@v3
+        with:
+          registry: briteregistryproduction.azurecr.io
+          username: ${{ secrets.ACR_PROD_USERNAME }}
+          password: ${{ secrets.ACR_PROD_PASSWORD }}
+
+      # Build once, push the same digest to both registries under immutable tags.
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          tags: |
+            briteregistrydevelopment.azurecr.io/hd-brite/documenso:${{ steps.meta.outputs.tag }}
+            briteregistrydevelopment.azurecr.io/hd-brite/documenso:${{ steps.meta.outputs.tag }}-${{ steps.meta.outputs.sha }}
+            briteregistryproduction.azurecr.io/hd-brite/documenso:${{ steps.meta.outputs.tag }}
+            briteregistryproduction.azurecr.io/hd-brite/documenso:${{ steps.meta.outputs.tag }}-${{ steps.meta.outputs.sha }}
+
+      - name: Output digest to pin in the brite monorepo
+        run: |
+          echo "Published. Pin this digest in tools/documenso/iac/argocd/{development,production}/kustomization.yml:"
+          docker buildx imagetools inspect \
+            briteregistrydevelopment.azurecr.io/hd-brite/documenso:${{ steps.meta.outputs.tag }} \
+            --format '{{.Manifest.Digest}}'
