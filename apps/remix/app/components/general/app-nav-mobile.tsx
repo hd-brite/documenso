@@ -1,4 +1,3 @@
-import LogoImage from '@documenso/assets/logo.png';
 import { authClient } from '@documenso/auth/client';
 import { useSession } from '@documenso/lib/client-only/providers/session';
 import { isPersonalLayout } from '@documenso/lib/utils/organisations';
@@ -10,6 +9,7 @@ import { ReadStatus } from '@prisma/client';
 import { useMemo } from 'react';
 import { Link } from 'react-router';
 
+import { BrandingLogo } from '~/components/general/branding-logo';
 import { useOptionalCurrentTeam } from '~/providers/team';
 
 export type AppNavMobileProps = {
@@ -81,7 +81,7 @@ export const AppNavMobile = ({ isMenuOpen, onMenuOpenChange }: AppNavMobileProps
     <Sheet open={isMenuOpen} onOpenChange={onMenuOpenChange}>
       <SheetContent className="flex w-full max-w-[350px] flex-col">
         <Link to="/" onClick={handleMenuItemClick}>
-          <img src={LogoImage} alt="Documenso Logo" className="dark:invert" width={170} height={25} />
+          <BrandingLogo aria-label="Brite Logo" className="h-[25px] w-auto text-foreground" />
         </Link>
 
         <div className="mt-8 flex w-full flex-col items-start gap-y-4">
