@@ -1,6 +1,5 @@
 import signingCelebration from '@documenso/assets/images/signing-celebration.png';
 import { getOptionalSession } from '@documenso/auth/server/lib/utils/get-session';
-import { useOptionalSession } from '@documenso/lib/client-only/providers/session';
 import { isSignupEnabledForProvider } from '@documenso/lib/constants/auth';
 import { loadRecipientBrandingByTeamId } from '@documenso/lib/server-only/branding/load-recipient-branding';
 import { getDocumentAndSenderByToken } from '@documenso/lib/server-only/document/get-document-by-token';
@@ -20,7 +19,6 @@ import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 import { DocumentStatus, FieldType, RecipientRole } from '@prisma/client';
 import { CheckCircle2, Clock8, DownloadIcon, Loader2 } from 'lucide-react';
-import { Link } from 'react-router';
 import { match } from 'ts-pattern';
 
 import { EnvelopeDownloadDialog } from '~/components/dialogs/envelope-download-dialog';
@@ -85,10 +83,6 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 
   const canSignUp = !isExistingUser && isSignupEnabledForProvider('email');
 
-  const canRedirectToFolder = user && document.userId === user.id && document.folderId && document.team?.url;
-
-  const returnToHomePath = canRedirectToFolder ? `/t/${document.team.url}/documents/f/${document.folderId}` : '/';
-
   return {
     isDocumentAccessValid: true,
     canSignUp,
@@ -97,7 +91,6 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     signatures,
     document,
     recipient,
-    returnToHomePath,
     branding,
   };
 }
@@ -105,8 +98,6 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 export default function CompletedSigningPage({ loaderData }: Route.ComponentProps) {
   const { _ } = useLingui();
 
-  const { sessionData } = useOptionalSession();
-  const user = sessionData?.user;
   const cspNonce = useCspNonce();
 
   const {
@@ -117,7 +108,6 @@ export default function CompletedSigningPage({ loaderData }: Route.ComponentProp
     document,
     recipient,
     recipientEmail,
-    returnToHomePath,
     branding,
   } = loaderData;
 
@@ -268,14 +258,6 @@ export default function CompletedSigningPage({ loaderData }: Route.ComponentProp
                     </Button>
                   }
                 />
-              )}
-
-              {user && (
-                <Button asChild>
-                  <Link to={returnToHomePath}>
-                    <Trans>Go Back Home</Trans>
-                  </Link>
-                </Button>
               )}
             </div>
           </div>
