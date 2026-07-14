@@ -10,7 +10,7 @@ digest-pinned images). See that README for infrastructure details.
 
 ## Upstream base
 
-- Current base: upstream `main` at `562d78e2` ("feat: add granular signin disable flags and OIDC auto-redirect (#2857)", pre-v2.14.0 line).
+- Current base: upstream `main` at `562d78e2d7f20db0f1d5dc63375379b3af0d07c5` ("feat: add granular signin disable flags and OIDC auto-redirect (#2857)", pre-v2.14.0 line).
 - To take a new upstream version: merge the upstream tag/branch into `main` via PR (prefer merge over rebase since `main` is shared), re-verify each change below survived, then publish a new image.
 
 ## Publishing images
