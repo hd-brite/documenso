@@ -3,6 +3,7 @@ import type {
   TEnvelopeReminderPeriod,
   TEnvelopeReminderSettings,
 } from '@documenso/lib/constants/envelope-reminder';
+import { isStopAfterAtLeastSendAfter, MAX_REMINDER_WINDOW_DAYS } from '@documenso/lib/constants/envelope-reminder';
 import { Input } from '@documenso/ui/primitives/input';
 import { Label } from '@documenso/ui/primitives/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@documenso/ui/primitives/select';
@@ -22,12 +23,12 @@ const getMode = (value: TEnvelopeReminderSettings | null | undefined): ReminderM
   return 'enabled';
 };
 
-const getPeriodAmount = (period: TEnvelopeReminderPeriod | undefined): number => {
+const getPeriodAmount = (period: TEnvelopeReminderPeriod | undefined, defaultAmount = 1): number => {
   if (period && 'amount' in period) {
     return period.amount;
   }
 
-  return 1;
+  return defaultAmount;
 };
 
 const getPeriodUnit = (period: TEnvelopeReminderPeriod | undefined): TEnvelopeReminderDurationPeriod['unit'] => {
@@ -57,6 +58,15 @@ export const ReminderSettingsPicker = ({
   const sendAfterUnit = getPeriodUnit(value?.sendAfter);
   const repeatEveryAmount = getPeriodAmount(value?.repeatEvery);
   const repeatEveryUnit = getPeriodUnit(value?.repeatEvery);
+  const stopAfterAmount = getPeriodAmount(value?.stopAfter, MAX_REMINDER_WINDOW_DAYS);
+  const stopAfterUnit = getPeriodUnit(value?.stopAfter);
+
+  const currentStopAfter = value?.stopAfter ?? { unit: stopAfterUnit, amount: stopAfterAmount };
+
+  const isStopAfterTooShort = !isStopAfterAtLeastSendAfter(
+    { unit: sendAfterUnit, amount: sendAfterAmount },
+    currentStopAfter,
+  );
 
   const onModeChange = (newMode: string) => {
     if (newMode === 'inherit') {
@@ -68,6 +78,7 @@ export const ReminderSettingsPicker = ({
       onChange({
         sendAfter: { disabled: true },
         repeatEvery: { disabled: true },
+        stopAfter: currentStopAfter,
       });
       return;
     }
@@ -75,6 +86,7 @@ export const ReminderSettingsPicker = ({
     onChange({
       sendAfter: { unit: sendAfterUnit, amount: sendAfterAmount },
       repeatEvery: { unit: repeatEveryUnit, amount: repeatEveryAmount },
+      stopAfter: currentStopAfter,
     });
   };
 
@@ -85,6 +97,7 @@ export const ReminderSettingsPicker = ({
     onChange({
       sendAfter: { unit: newUnit, amount: newAmount },
       repeatEvery: value?.repeatEvery ?? { unit: repeatEveryUnit, amount: repeatEveryAmount },
+      stopAfter: currentStopAfter,
     });
   };
 
@@ -95,6 +108,18 @@ export const ReminderSettingsPicker = ({
     onChange({
       sendAfter: value?.sendAfter ?? { unit: sendAfterUnit, amount: sendAfterAmount },
       repeatEvery: { unit: newUnit, amount: newAmount },
+      stopAfter: currentStopAfter,
+    });
+  };
+
+  const updateStopAfter = (updates: Partial<{ amount: number; unit: TEnvelopeReminderDurationPeriod['unit'] }>) => {
+    const newAmount = Math.max(1, Math.floor(updates.amount ?? stopAfterAmount));
+    const newUnit = updates.unit ?? stopAfterUnit;
+
+    onChange({
+      sendAfter: value?.sendAfter ?? { unit: sendAfterUnit, amount: sendAfterAmount },
+      repeatEvery: value?.repeatEvery ?? { unit: repeatEveryUnit, amount: repeatEveryAmount },
+      stopAfter: { unit: newUnit, amount: newAmount },
     });
   };
 
@@ -103,6 +128,7 @@ export const ReminderSettingsPicker = ({
       onChange({
         sendAfter: value?.sendAfter ?? { unit: sendAfterUnit, amount: sendAfterAmount },
         repeatEvery: { disabled: true },
+        stopAfter: currentStopAfter,
       });
       return;
     }
@@ -110,6 +136,7 @@ export const ReminderSettingsPicker = ({
     onChange({
       sendAfter: value?.sendAfter ?? { unit: sendAfterUnit, amount: sendAfterAmount },
       repeatEvery: { unit: repeatEveryUnit, amount: repeatEveryAmount },
+      stopAfter: currentStopAfter,
     });
   };
 
@@ -212,6 +239,42 @@ export const ReminderSettingsPicker = ({
                   testId="reminder-repeat-unit"
                 />
               </div>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label className="text-muted-foreground text-sm">
+              <Trans>Stop sending reminders after</Trans>
+            </Label>
+
+            <div className="flex flex-row gap-2">
+              <Input
+                type="number"
+                min={1}
+                className="w-20 bg-background"
+                value={stopAfterAmount}
+                onChange={(e) => updateStopAfter({ amount: Number(e.target.value) })}
+                disabled={disabled}
+                data-testid="reminder-stop-after-amount"
+              />
+
+              <UnitSelect
+                value={stopAfterUnit}
+                amount={stopAfterAmount}
+                onChange={(unit) =>
+                  updateStopAfter({
+                    unit: unit as TEnvelopeReminderDurationPeriod['unit'],
+                  })
+                }
+                disabled={disabled}
+                testId="reminder-stop-after-unit"
+              />
+            </div>
+
+            {isStopAfterTooShort && (
+              <p className="text-destructive text-sm" data-testid="reminder-stop-after-error">
+                <Trans>Stop-after period must be at least as long as the first-reminder delay.</Trans>
+              </p>
             )}
           </div>
         </div>
