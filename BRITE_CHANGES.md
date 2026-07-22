@@ -49,3 +49,8 @@ digest-pinned images). See that README for infrastructure details.
 - `packages/ui/components/document/reminder-settings-picker.tsx`: added a third "Stop sending reminders after" control mirroring the existing two, always required (no unlimited/disabled option). No changes needed to the org/team defaults form, the per-document override dialog, or any tRPC router - all three already treat `reminderSettings` as an opaque whole object.
 - `packages/app-tests/e2e/envelope-editor-v2/envelope-settings.spec.ts`: extended to set/verify the new field.
 - Rationale: the reminder cap existed to prevent nagging a recipient forever, but was rigid; this makes the cutoff configurable at the same level as the existing reminder timing settings, per Brite product direction.
+
+### 5. E2E runner switched to `ubuntu-latest` (RLN-95, PR #5)
+
+- `.github/workflows/e2e-tests.yml`: `runs-on` changed from `warp-ubuntu-2204-x64-8x` to `ubuntu-latest`.
+- Rationale: `warp-ubuntu-2204-x64-8x` is a third-party WarpBuild custom runner label inherited unchanged from upstream - Brite has no WarpBuild account or runner anywhere, so every E2E run on this repo sat `queued` indefinitely and was never actually executed (confirmed via run history back to 2026-07-01). Switching to the standard GitHub-hosted runner used by every other Brite workflow lets the suite actually run.
