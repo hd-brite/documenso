@@ -36,6 +36,8 @@ const TEST_SETTINGS_VALUES = {
   reminderRepeatMode: 'Custom interval',
   reminderRepeatAmount: 7,
   reminderRepeatUnit: 'Days',
+  reminderStopAfterAmount: 45,
+  reminderStopAfterUnit: 'Days',
   accessAuth: 'Require account',
   actionAuth: 'Require password',
   visibility: 'Managers and above',
@@ -50,6 +52,7 @@ const DB_EXPECTED_VALUES = {
   reminderSettings: {
     sendAfter: { unit: 'day', amount: 3 },
     repeatEvery: { unit: 'day', amount: 7 },
+    stopAfter: { unit: 'day', amount: 45 },
   },
   visibility: DocumentVisibility.MANAGER_AND_ABOVE,
   globalAccessAuth: ['ACCOUNT'],
@@ -174,15 +177,31 @@ const runSettingsFlow = async ({ root }: TEnvelopeEditorSurface, { externalId, i
   await root.getByRole('option', { name: TEST_SETTINGS_VALUES.reminderRepeatUnit }).click();
   await clickSettingsDialogHeader(root);
 
+  await root.locator('[data-testid="reminder-stop-after-amount"]').clear();
+  await root
+    .locator('[data-testid="reminder-stop-after-amount"]')
+    .fill(String(TEST_SETTINGS_VALUES.reminderStopAfterAmount));
+
+  await root.locator('[data-testid="reminder-stop-after-unit"]').click();
+  await root.getByRole('option', { name: TEST_SETTINGS_VALUES.reminderStopAfterUnit }).click();
+  await clickSettingsDialogHeader(root);
+
+  // Re-drive the same three reminder fields via generic role-based locators (rather than
+  // data-testid) to double-check they're also reachable by accessible role/label, the way a
+  // screen reader or keyboard user would. There are 3 spinbuttons and 3 unit comboboxes in
+  // this tab now: sendAfter (first), repeatEvery (middle), stopAfter (last). This assumes
+  // repeatEvery is in 'Custom interval' mode (set above) so its inputs are actually rendered -
+  // if it were 'Don't repeat' there'd only be 2 of each, and the indices below would silently
+  // misalign onto the wrong field. Assert the count so that regresses loudly instead of quietly.
   const spinbuttons = root.getByRole('spinbutton');
+  await expect(spinbuttons).toHaveCount(3);
   await spinbuttons.first().clear();
   await spinbuttons.first().fill(String(TEST_SETTINGS_VALUES.reminderSendAfterAmount));
 
-  const sendAfterUnitTrigger = root
-    .locator('button[role="combobox"]')
-    .filter({ hasText: /Days|Weeks|Months/ })
-    .first();
-  await sendAfterUnitTrigger.click();
+  const unitTriggers = root.locator('button[role="combobox"]').filter({ hasText: /Days|Weeks|Months/ });
+
+  await expect(unitTriggers).toHaveCount(3);
+  await unitTriggers.first().click();
   await root.getByRole('option', { name: TEST_SETTINGS_VALUES.reminderSendAfterUnit }).click();
   await clickSettingsDialogHeader(root);
 
@@ -194,15 +213,18 @@ const runSettingsFlow = async ({ root }: TEnvelopeEditorSurface, { externalId, i
   await root.getByRole('option', { name: TEST_SETTINGS_VALUES.reminderRepeatMode }).click();
   await clickSettingsDialogHeader(root);
 
-  await spinbuttons.last().clear();
-  await spinbuttons.last().fill(String(TEST_SETTINGS_VALUES.reminderRepeatAmount));
+  await spinbuttons.nth(1).clear();
+  await spinbuttons.nth(1).fill(String(TEST_SETTINGS_VALUES.reminderRepeatAmount));
 
-  const repeatUnitTrigger = root
-    .locator('button[role="combobox"]')
-    .filter({ hasText: /Days|Weeks|Months/ })
-    .last();
-  await repeatUnitTrigger.click();
+  await unitTriggers.nth(1).click();
   await root.getByRole('option', { name: TEST_SETTINGS_VALUES.reminderRepeatUnit }).click();
+  await clickSettingsDialogHeader(root);
+
+  await spinbuttons.last().clear();
+  await spinbuttons.last().fill(String(TEST_SETTINGS_VALUES.reminderStopAfterAmount));
+
+  await unitTriggers.last().click();
+  await root.getByRole('option', { name: TEST_SETTINGS_VALUES.reminderStopAfterUnit }).click();
   await clickSettingsDialogHeader(root);
 
   await root.getByRole('button', { name: 'Notifications' }).click();
@@ -293,6 +315,12 @@ const runSettingsFlow = async ({ root }: TEnvelopeEditorSurface, { externalId, i
   );
   await expect(root.locator('[data-testid="reminder-repeat-unit"]')).toContainText(
     TEST_SETTINGS_VALUES.reminderRepeatUnit,
+  );
+  await expect(root.locator('[data-testid="reminder-stop-after-amount"]')).toHaveValue(
+    String(TEST_SETTINGS_VALUES.reminderStopAfterAmount),
+  );
+  await expect(root.locator('[data-testid="reminder-stop-after-unit"]')).toContainText(
+    TEST_SETTINGS_VALUES.reminderStopAfterUnit,
   );
 
   await root.getByRole('button', { name: 'Notifications' }).click();
