@@ -291,6 +291,26 @@ export const diffDocumentMetaChanges = (
 };
 
 /**
+ * Brite (BL-3903): the sender-name diff for a partial meta update. `updateEnvelope` saves
+ * `meta.senderName` but upstream writes no meta diff there, and `diffDocumentMetaChanges`
+ * would read every field the update leaves out as cleared. Only a `senderName` the update
+ * sends is compared; blank and missing both mean no name.
+ */
+export const diffSenderNameChange = (
+  oldMeta: Pick<Partial<DocumentMeta>, 'senderName'> | null | undefined,
+  meta: Partial<DocumentMeta> | null | undefined,
+): TDocumentAuditLogDocumentMetaDiffSchema[] => {
+  if (!meta || !('senderName' in meta)) {
+    return [];
+  }
+
+  const from = oldMeta?.senderName || null;
+  const to = meta.senderName || null;
+
+  return from === to ? [] : [{ type: DOCUMENT_META_DIFF_TYPE.SENDER_NAME, from, to }];
+};
+
+/**
  * Formats the audit log into a description of the action.
  *
  * Provide a userId to prefix the action with the user, example 'X did Y'.
