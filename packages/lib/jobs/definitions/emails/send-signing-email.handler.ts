@@ -23,6 +23,7 @@ import { DOCUMENT_AUDIT_LOG_TYPE } from '../../../types/document-audit-logs';
 import { extractDerivedDocumentEmailSettings } from '../../../types/document-email';
 import { createDocumentAuditLogData } from '../../../utils/document-audit-logs';
 import { unsafeBuildEnvelopeIdQuery } from '../../../utils/envelope';
+import { getEnvelopeSenderName, getSenderInviteText } from '../../../utils/envelope-sender';
 import { renderCustomEmailTemplate } from '../../../utils/render-custom-email-template';
 import { renderEmailWithI18N } from '../../../utils/render-email-with-i18n';
 import type { JobRunIO } from '../../client/_internal/job';
@@ -158,6 +159,20 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
     }
   }
 
+  // Brite (BL-3903): name the person who sent the envelope instead of the team.
+  const senderName = selfSigner || isDirectTemplate ? null : getEnvelopeSenderName(documentMeta, envelope.teamId);
+
+  if (senderName) {
+    const senderInvite = getSenderInviteText(i18n, {
+      senderName,
+      actionVerb: recipientActionVerb,
+      documentTitle: envelope.title,
+    });
+
+    emailSubject = senderInvite.subject;
+    emailMessage = customEmail?.message || senderInvite.message;
+  }
+
   const customEmailTemplate = {
     'signer.name': name,
     'signer.email': email,
@@ -183,6 +198,7 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
     teamEmail: team?.teamEmail?.email,
     includeSenderDetails: settings.includeSenderDetails,
     reportUrl,
+    senderName,
   });
 
   if (isRecipientEmailValidForSending(recipient)) {

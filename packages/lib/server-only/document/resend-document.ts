@@ -25,6 +25,7 @@ import { extractDerivedDocumentEmailSettings } from '../../types/document-email'
 import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../../types/webhook-payload';
 import { isDocumentCompleted } from '../../utils/document';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
+import { getEnvelopeSenderName, getSenderInviteText } from '../../utils/envelope-sender';
 import { isRecipientEmailValidForSending } from '../../utils/recipients';
 import { renderEmailWithI18N } from '../../utils/render-email-with-i18n';
 import { buildEnvelopeEmailHeaders } from '../email/build-envelope-email-headers';
@@ -232,6 +233,20 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
           );
       }
 
+      // Brite (BL-3903): name the person who sent the envelope instead of the team.
+      const senderName = selfSigner ? null : getEnvelopeSenderName(envelope.documentMeta, envelope.teamId);
+
+      if (senderName) {
+        const senderInvite = getSenderInviteText(i18n, {
+          senderName,
+          actionVerb: recipientActionVerb,
+          documentTitle: envelope.title,
+        });
+
+        emailSubject = i18n._(msg`Reminder: ${senderInvite.subject}`);
+        emailMessage = envelope.documentMeta.message || senderInvite.message;
+      }
+
       const customEmailTemplate = {
         'signer.name': name,
         'signer.email': email,
@@ -257,6 +272,7 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
         organisationType,
         teamName: envelope.team?.name,
         reportUrl,
+        senderName,
       });
 
       const [html, text] = await Promise.all([

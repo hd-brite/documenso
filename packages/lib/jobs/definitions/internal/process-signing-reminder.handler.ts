@@ -24,6 +24,7 @@ import { DOCUMENT_AUDIT_LOG_TYPE, DOCUMENT_EMAIL_TYPE } from '../../../types/doc
 import { extractDerivedDocumentEmailSettings } from '../../../types/document-email';
 import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../../../types/webhook-payload';
 import { createDocumentAuditLogData } from '../../../utils/document-audit-logs';
+import { getEnvelopeSenderName, getSenderInviteText } from '../../../utils/envelope-sender';
 import { renderCustomEmailTemplate } from '../../../utils/render-custom-email-template';
 import { renderEmailWithI18N } from '../../../utils/render-email-with-i18n';
 import type { JobRunIO } from '../../client/_internal/job';
@@ -136,6 +137,19 @@ export const run = async ({ payload, io }: { payload: TProcessSigningReminderJob
 
   if (organisationType === OrganisationType.ORGANISATION) {
     emailSubject = i18n._(msg`Reminder: ${envelope.team.name} invited you to ${recipientActionVerb} a document`);
+  }
+
+  // Brite (BL-3903): name the person who sent the envelope instead of the team.
+  const senderName = getEnvelopeSenderName(envelope.documentMeta, envelope.teamId);
+
+  if (senderName) {
+    const { subject } = getSenderInviteText(i18n, {
+      senderName,
+      actionVerb: recipientActionVerb,
+      documentTitle: envelope.title,
+    });
+
+    emailSubject = i18n._(msg`Reminder: ${subject}`);
   }
 
   const customEmailTemplate = {
