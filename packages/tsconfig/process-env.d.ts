@@ -84,6 +84,11 @@ declare namespace NodeJS {
     NEXT_PRIVATE_SMTP_UNSAFE_IGNORE_TLS?: string;
 
     NEXT_PRIVATE_SMTP_FROM_NAME?: string;
+    /**
+     * Brite (BL-3903): comma-separated team ids whose envelopes may set
+     * `meta.senderName`. Unset or empty means no team (the field is ignored).
+     */
+    NEXT_PRIVATE_BRITE_SENDER_NAME_TEAM_IDS?: string;
     NEXT_PRIVATE_SMTP_FROM_ADDRESS?: string;
 
     NEXT_PUBLIC_DISABLE_SIGNUP?: string;

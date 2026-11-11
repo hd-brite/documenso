@@ -577,6 +577,9 @@ model DocumentMeta {
   emailSettings Json? /// [DocumentEmailSettings] @zod.custom.use(ZDocumentEmailSettingsSchema)
   emailReplyTo  String?
   emailId       String?
+  /// Brite (BL-3903): display name of the person who sent the envelope, used as the
+  /// From name and in the invite wording of recipient emails. Null keeps upstream wording.
+  senderName    String?
 
   envelopeExpirationPeriod Json? /// [EnvelopeExpirationPeriod] @zod.custom.use(ZEnvelopeExpirationPeriodSchema)
 

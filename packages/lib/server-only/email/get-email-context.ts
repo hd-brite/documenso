@@ -15,6 +15,7 @@ import { match, P } from 'ts-pattern';
 import { IS_BILLING_ENABLED } from '../../constants/app';
 import { DOCUMENSO_INTERNAL_EMAIL } from '../../constants/email';
 import { AppError, AppErrorCode } from '../../errors/app-error';
+import { withEnvelopeSenderName } from '../../utils/envelope-sender';
 import { logger } from '../../utils/logger';
 import {
   organisationGlobalSettingsToBranding,
@@ -23,7 +24,7 @@ import {
 import { extractDerivedTeamSettings } from '../../utils/teams';
 import { resolveEmailTransport } from './resolve-email-transport';
 
-type EmailMetaOption = Partial<Pick<DocumentMeta, 'emailId' | 'emailReplyTo' | 'language'>>;
+type EmailMetaOption = Partial<Pick<DocumentMeta, 'emailId' | 'emailReplyTo' | 'language' | 'senderName'>>;
 
 type BaseGetEmailContextOptions = {
   /**
@@ -144,6 +145,9 @@ export const getEmailContext = async (options: GetEmailContextOptions): Promise<
 
   const replyToEmail = meta?.emailReplyTo || emailContext.settings.emailReplyTo || undefined;
 
+  // Brite (BL-3903): only a team source can be allowlisted for envelope sender names.
+  const senderNameTeamId = source.type === 'team' ? source.teamId : null;
+
   const senderEmailId = match(meta?.emailId)
     .with(P.string, (emailId) => emailId) // Explicit string means to use the provided email ID.
     .with(undefined, () => emailContext.settings.emailId) // Undefined means to use the inherited email ID.
@@ -163,23 +167,32 @@ export const getEmailContext = async (options: GetEmailContextOptions): Promise<
     return {
       ...emailContext,
       emailTransport: mailer,
-      senderEmail: {
-        name: foundSenderEmail.emailName,
-        address: foundSenderEmail.email,
-      },
+      senderEmail: withEnvelopeSenderName(
+        {
+          name: foundSenderEmail.emailName,
+          address: foundSenderEmail.email,
+        },
+        meta,
+        senderNameTeamId,
+      ),
       replyToEmail,
       emailLanguage,
     };
   }
 
   // No custom-domain sender → per-plan transport (if any) supplies transport + from-address.
+  // Brite (BL-3903): an envelope sender name replaces only the display name.
   return {
     ...emailContext,
     emailTransport: resolvedTransportData.transport,
-    senderEmail: {
-      name: resolvedTransportData.name,
-      address: resolvedTransportData.address,
-    },
+    senderEmail: withEnvelopeSenderName(
+      {
+        name: resolvedTransportData.name,
+        address: resolvedTransportData.address,
+      },
+      meta,
+      senderNameTeamId,
+    ),
     replyToEmail,
     emailLanguage,
   };

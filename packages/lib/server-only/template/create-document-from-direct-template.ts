@@ -40,6 +40,7 @@ import {
   extractDocumentAuthMethods,
 } from '../../utils/document-auth';
 import { mapSecondaryIdToTemplateId } from '../../utils/envelope';
+import { withoutEnvelopeSenderName } from '../../utils/envelope-sender';
 import { sendDocument } from '../document/send-document';
 import { validateFieldAuth } from '../document/validate-field-auth';
 import { incrementDocumentId } from '../envelope/increment-id';
@@ -208,7 +209,12 @@ export const createDocumentFromDirectTemplate = async ({
     strict: false,
   });
 
-  const derivedDocumentMeta = extractDerivedDocumentMeta(settings, directTemplateEnvelope.documentMeta, signatureLevel);
+  // Brite (BL-3903): a template's sender name never carries over to the documents made from it.
+  const derivedDocumentMeta = extractDerivedDocumentMeta(
+    settings,
+    withoutEnvelopeSenderName(directTemplateEnvelope.documentMeta),
+    signatureLevel,
+  );
 
   // The resulting document contains every non-direct template recipient plus the
   // direct recipient that is signing now. A recipientCount of 0 means unlimited.

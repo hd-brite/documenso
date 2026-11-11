@@ -18,6 +18,11 @@ export interface TemplateDocumentInviteProps {
   teamName?: string;
   includeSenderDetails?: boolean;
   organisationType?: OrganisationType;
+  /**
+   * Brite (BL-3903): the person who sent the envelope. When set it replaces the
+   * team and API token owner wording with "<senderName> has invited you to ...".
+   */
+  senderName?: string | null;
 }
 
 export const TemplateDocumentInvite = ({
@@ -30,6 +35,7 @@ export const TemplateDocumentInvite = ({
   teamName,
   includeSenderDetails,
   organisationType,
+  senderName,
 }: TemplateDocumentInviteProps) => {
   const { _ } = useLingui();
 
@@ -41,10 +47,16 @@ export const TemplateDocumentInvite = ({
 
       <Section>
         <Text className="mx-auto mb-0 max-w-[80%] text-center font-semibold text-foreground text-lg">
-          {match({ selfSigner, organisationType, includeSenderDetails, teamName })
+          {match({ selfSigner, organisationType, includeSenderDetails, teamName, senderName })
             .with({ selfSigner: true }, () => (
               <Trans>
                 Please {_(actionVerb).toLowerCase()} your document
+                <br />"{documentName}"
+              </Trans>
+            ))
+            .with({ senderName: P.string.minLength(1) }, () => (
+              <Trans>
+                {senderName} has invited you to {_(actionVerb).toLowerCase()}
                 <br />"{documentName}"
               </Trans>
             ))

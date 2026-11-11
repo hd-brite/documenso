@@ -24,6 +24,7 @@ import { DOCUMENT_AUDIT_LOG_TYPE, DOCUMENT_EMAIL_TYPE } from '../../../types/doc
 import { extractDerivedDocumentEmailSettings } from '../../../types/document-email';
 import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../../../types/webhook-payload';
 import { createDocumentAuditLogData } from '../../../utils/document-audit-logs';
+import { getInviteSenderName, getSenderInviteText } from '../../../utils/envelope-sender';
 import { renderCustomEmailTemplate } from '../../../utils/render-custom-email-template';
 import { renderEmailWithI18N } from '../../../utils/render-email-with-i18n';
 import type { JobRunIO } from '../../client/_internal/job';
@@ -138,6 +139,21 @@ export const run = async ({ payload, io }: { payload: TProcessSigningReminderJob
     emailSubject = i18n._(msg`Reminder: ${envelope.team.name} invited you to ${recipientActionVerb} a document`);
   }
 
+  // Brite (BL-3903): name the person who sent the envelope instead of the team.
+  const senderName = getInviteSenderName({
+    meta: envelope.documentMeta,
+    teamId: envelope.teamId,
+    source: envelope.source,
+    isSelfSigner: recipient.email === envelope.user.email,
+  });
+  const senderInvite = senderName
+    ? getSenderInviteText(i18n, { senderName, actionVerb: recipientActionVerb, documentTitle: envelope.title })
+    : null;
+
+  if (senderInvite) {
+    emailSubject = i18n._(msg`Reminder: ${senderInvite.subject}`);
+  }
+
   const customEmailTemplate = {
     'signer.name': recipient.name,
     'signer.email': recipient.email,
@@ -151,9 +167,10 @@ export const run = async ({ payload, io }: { payload: TProcessSigningReminderJob
     );
   }
 
+  // Brite (BL-3903): without a custom message, the reminder body names the sender.
   const emailMessage = envelope.documentMeta.message
     ? renderCustomEmailTemplate(envelope.documentMeta.message, customEmailTemplate)
-    : undefined;
+    : senderInvite?.message;
 
   const assetBaseUrl = NEXT_PUBLIC_WEBAPP_URL() || 'http://localhost:3000';
   const signDocumentLink = `${NEXT_PUBLIC_WEBAPP_URL()}/sign/${recipient.token}`;

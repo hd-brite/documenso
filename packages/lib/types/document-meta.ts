@@ -84,6 +84,14 @@ export const ZDocumentMetaSubjectSchema = z
   .max(254)
   .describe('The subject of the email that will be sent to the recipients.');
 
+export const ZDocumentMetaSenderNameSchema = z
+  .string()
+  .trim()
+  .max(100)
+  .describe(
+    'Display name of the person sending the document. Used as the From name and in the invite wording of recipient emails.',
+  );
+
 export const ZDocumentMetaMessageSchema = z
   .string()
   .max(5000)
@@ -125,6 +133,7 @@ export const ZDocumentMetaCreateSchema = z.object({
   drawSignatureEnabled: ZDocumentMetaDrawSignatureEnabledSchema.optional(),
   emailId: z.string().nullish(),
   emailReplyTo: zEmail().nullish(),
+  senderName: ZDocumentMetaSenderNameSchema.nullish(),
   emailSettings: ZDocumentEmailSettingsSchema.nullish(),
   envelopeExpirationPeriod: ZEnvelopeExpirationPeriod.nullish(),
   reminderSettings: ZEnvelopeReminderSettings.nullish(),

@@ -36,8 +36,12 @@ export const DocumentInviteEmailTemplate = ({
   includeSenderDetails,
   organisationType,
   reportUrl,
+  senderName: envelopeSenderName,
 }: DocumentInviteEmailTemplateProps) => {
   const { _ } = useLingui();
+
+  // Brite (BL-3903): a self-signer keeps the upstream "your document" wording.
+  const senderName = selfSigner ? null : envelopeSenderName;
 
   const action = _(RECIPIENT_ROLES_DESCRIPTION[role].actionVerb).toLowerCase();
 
@@ -47,6 +51,11 @@ export const DocumentInviteEmailTemplate = ({
     previewText = includeSenderDetails
       ? msg`${inviterName} on behalf of "${teamName}" has invited you to ${action} ${documentName}`
       : msg`${teamName} has invited you to ${action} ${documentName}`;
+  }
+
+  // Brite (BL-3903): the envelope sender name replaces the team wording.
+  if (senderName) {
+    previewText = msg`${senderName} has invited you to ${action} ${documentName}`;
   }
 
   if (selfSigner) {
@@ -76,13 +85,15 @@ export const DocumentInviteEmailTemplate = ({
                 organisationType={organisationType}
                 teamName={teamName}
                 includeSenderDetails={includeSenderDetails}
+                senderName={senderName}
               />
             </Section>
           </Container>
 
           <Container className="mx-auto mt-12 max-w-xl">
             <Section>
-              {organisationType === OrganisationType.PERSONAL && (
+              {/* Brite (BL-3903): the API token owner is not the sender when a sender name is set. */}
+              {organisationType === OrganisationType.PERSONAL && !senderName && (
                 <Text className="my-4 font-semibold text-base">
                   <Trans>
                     {inviterName}{' '}
@@ -96,6 +107,11 @@ export const DocumentInviteEmailTemplate = ({
               <Text className="mt-2 text-base text-muted-foreground">
                 {customBody ? (
                   <TemplateCustomMessageBody text={customBody} />
+                ) : senderName ? (
+                  // Brite (BL-3903): its own message, so the upstream one below keeps its translation key.
+                  <Trans>
+                    {senderName} has invited you to {action} the document "{documentName}".
+                  </Trans>
                 ) : (
                   <Trans>
                     {inviterName} has invited you to {action} the document "{documentName}".
