@@ -81,3 +81,11 @@ digest-pinned images). See that README for infrastructure details.
 
 - `.github/workflows/ci.yml`, `e2e-tests.yml` and `codeql-analysis.yml`: `runs-on: ubuntu-24.04` instead of `ubuntu-latest`.
 - Rationale: GitHub moved `ubuntu-latest` to Ubuntu 26.04 after the last green run (2026-09-30). Playwright 1.56.1 (pinned in `package.json`) refuses to install Chromium there ("Playwright does not support chromium on ubuntu26.04-x64"), so `npm ci` failed in Build App, E2E Tests and CodeQL on every PR. `publish_brite_documenso.yml` builds inside Docker and is unaffected, so it stays on `ubuntu-latest`. Unpin when Playwright is upgraded to a version that supports 26.04.
+
+### 9. Dev/E2E MinIO image moved off Docker Hub (PR #7)
+
+- `docker/development/compose.yml`: the `minio` service image changed from upstream's unpinned `minio/minio` to `cgr.dev/chainguard/minio:latest-dev@sha256:8d5a0265f0e18fb3b29f95598147f1cc2a86b782181668bad176b0e90cce9569` (MinIO `RELEASE.2026-09-22T19-25-18Z`). The `entrypoint`/`command` (create the `documenso` bucket directory, then `minio server`) is unchanged.
+- Rationale: `minio/minio` (and `minio/mc`) no longer exist on Docker Hub, so `npm run dx:up` failed with "pull access denied for minio/minio" and the "Playwright Tests" workflow failed before any test ran (run 36721868859, 2026-09-30). `quay.io/minio/minio` and `ghcr.io/minio/minio` also refuse anonymous pulls. Chainguard's image is the same MinIO server binary, rebuilt continuously and pullable anonymously. `latest-dev` is used instead of `latest` because `latest` ships without a shell and the compose `command` runs `sh -c`. Verified locally: the server starts, lists the `documenso` bucket, and accepts S3 put/get with the `.env.example` credentials.
+- E2E itself does not use S3 (`.env.example` sets `NEXT_PUBLIC_UPLOAD_TRANSPORT="database"`); the service only has to start for `dx:up` to succeed.
+- Local dev note: the Chainguard image runs as UID 65532, not root. A `documenso-development_minio` volume created by the old root image may be unwritable; reset it with `docker volume rm documenso-development_minio`.
+- To bump: `docker buildx imagetools inspect cgr.dev/chainguard/minio:latest-dev` and replace the digest. Chainguard's free tier only publishes `latest`/`latest-dev`, so there is no version tag to pin.
