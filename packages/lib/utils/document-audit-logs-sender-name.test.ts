@@ -58,6 +58,8 @@ describe('diffSenderNameChange', () => {
   it('records nothing when the update does not send a sender name', () => {
     expect(diffSenderNameChange({ senderName: 'Shaun Ross' }, { subject: 'Please sign' })).toEqual([]);
     expect(diffSenderNameChange({ senderName: 'Shaun Ross' }, undefined)).toEqual([]);
+    // Prisma leaves a field alone when it is undefined, so that is not a clear.
+    expect(diffSenderNameChange({ senderName: 'Shaun Ross' }, { senderName: undefined })).toEqual([]);
   });
 
   it('records nothing when the sender name is the same', () => {

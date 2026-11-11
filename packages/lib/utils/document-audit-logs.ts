@@ -294,13 +294,14 @@ export const diffDocumentMetaChanges = (
  * Brite (BL-3903): the sender-name diff for a partial meta update. `updateEnvelope` saves
  * `meta.senderName` but upstream writes no meta diff there, and `diffDocumentMetaChanges`
  * would read every field the update leaves out as cleared. Only a `senderName` the update
- * sends is compared; blank and missing both mean no name.
+ * sends is compared (undefined is not sent); a stored blank and null both mean no name.
  */
 export const diffSenderNameChange = (
   oldMeta: Pick<Partial<DocumentMeta>, 'senderName'> | null | undefined,
   meta: Partial<DocumentMeta> | null | undefined,
 ): TDocumentAuditLogDocumentMetaDiffSchema[] => {
-  if (!meta || !('senderName' in meta)) {
+  // Undefined leaves the stored name alone in Prisma; null or blank clears it.
+  if (!meta || meta.senderName === undefined) {
     return [];
   }
 
