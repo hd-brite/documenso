@@ -107,9 +107,14 @@ export const DocumentInviteEmailTemplate = ({
               <Text className="mt-2 text-base text-muted-foreground">
                 {customBody ? (
                   <TemplateCustomMessageBody text={customBody} />
+                ) : senderName ? (
+                  // Brite (BL-3903): its own message, so the upstream one below keeps its translation key.
+                  <Trans>
+                    {senderName} has invited you to {action} the document "{documentName}".
+                  </Trans>
                 ) : (
                   <Trans>
-                    {senderName || inviterName} has invited you to {action} the document "{documentName}".
+                    {inviterName} has invited you to {action} the document "{documentName}".
                   </Trans>
                 )}
               </Text>

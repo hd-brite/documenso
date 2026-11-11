@@ -1,6 +1,7 @@
 import { renderWithI18N } from '@documenso/email/render';
 import DocumentInviteEmailTemplate from '@documenso/email/templates/document-invite';
 import { setupI18n } from '@lingui/core';
+import { generateMessageId } from '@lingui/message-utils/generateMessageId';
 import { OrganisationType, RecipientRole } from '@prisma/client';
 import { createElement } from 'react';
 import { describe, expect, it } from 'vitest';
@@ -9,7 +10,7 @@ const i18n = setupI18n({ locale: 'en', messages: { en: {} } });
 
 const DOCUMENT_NAME = 'John Smith (Project 98783983)';
 
-const renderInvite = async (props: Record<string, unknown>) => {
+const renderInvite = (props: Record<string, unknown>) => {
   const element = createElement(DocumentInviteEmailTemplate, {
     role: RecipientRole.SIGNER,
     inviterName: 'Scott Johnson',
@@ -46,5 +47,30 @@ describe('document invite email with an envelope sender name', () => {
 
     expect(text).toContain('Please sign your document');
     expect(text).not.toContain('Shaun Ross has invited you');
+  });
+
+  it('keeps the upstream translation of the default body when no sender name is set', async () => {
+    // Lingui keys a message by its source text. Changing the placeholders of the upstream
+    // sentence changes the key and drops every existing translation of it.
+    const upstreamBodyId = generateMessageId(
+      '{inviterName} has invited you to {action} the document "{documentName}".',
+    );
+    const translated = setupI18n({
+      locale: 'en',
+      messages: { en: { [upstreamBodyId]: 'TRANSLATED {inviterName} {action} {documentName}' } },
+    });
+
+    const element = createElement(DocumentInviteEmailTemplate, {
+      role: RecipientRole.SIGNER,
+      inviterName: 'Scott Johnson',
+      inviterEmail: 'scott@example.com',
+      documentName: DOCUMENT_NAME,
+      organisationType: OrganisationType.ORGANISATION,
+      teamName: 'RLN Documents',
+      includeSenderDetails: true,
+    });
+    const text = await renderWithI18N(element, { i18n: translated, plainText: true });
+
+    expect(text).toContain(`TRANSLATED Scott Johnson sign ${DOCUMENT_NAME}`);
   });
 });

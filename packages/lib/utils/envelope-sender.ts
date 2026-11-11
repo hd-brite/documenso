@@ -1,13 +1,10 @@
-import type { I18n } from "@lingui/core";
-import { msg } from "@lingui/core/macro";
-import type { DocumentMeta } from "@prisma/client";
+import type { I18n } from '@lingui/core';
+import { msg } from '@lingui/core/macro';
+import type { DocumentMeta } from '@prisma/client';
 
-import { env } from "./env";
+import { env } from './env';
 
-type SenderNameMeta =
-  | Partial<Pick<DocumentMeta, "senderName">>
-  | null
-  | undefined;
+type SenderNameMeta = Partial<Pick<DocumentMeta, 'senderName'>> | null | undefined;
 
 /**
  * Brite (BL-3903): an envelope can carry the display name of the person who sent it
@@ -20,15 +17,13 @@ type SenderNameMeta =
  * gets a personal team, so without the allowlist anyone could choose the From name of
  * mail sent from our domain. Unset means no team: the field is stored but ignored.
  */
-export const isSenderNameAllowedForTeam = (
-  teamId: number | null | undefined,
-) => {
+export const isSenderNameAllowedForTeam = (teamId: number | null | undefined) => {
   if (teamId === null || teamId === undefined) {
     return false;
   }
 
-  const allowed = (env("NEXT_PRIVATE_BRITE_SENDER_NAME_TEAM_IDS") ?? "")
-    .split(",")
+  const allowed = (env('NEXT_PRIVATE_BRITE_SENDER_NAME_TEAM_IDS') ?? '')
+    .split(',')
     .map((id) => id.trim())
     .filter(Boolean);
 
@@ -43,25 +38,20 @@ export const isSenderNameAllowedForTeam = (
  * breaks included) collapse to single spaces. Same rules as CleanSenderName in the
  * brite Go SDK (libs/go-modules/sdks/documenso).
  */
-export const getEnvelopeSenderName = (
-  meta: SenderNameMeta,
-  teamId: number | null | undefined,
-) => {
+export const getEnvelopeSenderName = (meta: SenderNameMeta, teamId: number | null | undefined) => {
   if (!isSenderNameAllowedForTeam(teamId)) {
     return null;
   }
 
   const senderName = meta?.senderName
-    ?.replace(/(?![\u200C\u200D])\p{Cf}/gu, "")
-    .replace(/[\s\p{Cc}]+/gu, " ")
-    .replace(/^[\s\u200C\u200D]+|[\s\u200C\u200D]+$/gu, "");
+    ?.replace(/(?![\u200C\u200D])\p{Cf}/gu, '')
+    .replace(/[\s\p{Cc}]+/gu, ' ')
+    .replace(/^[\s\u200C\u200D]+|[\s\u200C\u200D]+$/gu, '');
 
   return senderName || null;
 };
 
-export const withEnvelopeSenderName = <
-  T extends { name: string; address: string },
->(
+export const withEnvelopeSenderName = <T extends { name: string; address: string }>(
   sender: T,
   meta: SenderNameMeta,
   teamId: number | null | undefined,
@@ -81,10 +71,6 @@ export const getSenderInviteText = (
   i18n: I18n,
   { senderName, actionVerb, documentTitle }: SenderInviteTextOptions,
 ) => ({
-  subject: i18n._(
-    msg`${senderName} has invited you to ${actionVerb} ${documentTitle}`,
-  ),
-  message: i18n._(
-    msg`${senderName} has invited you to ${actionVerb} the document "${documentTitle}".`,
-  ),
+  subject: i18n._(msg`${senderName} has invited you to ${actionVerb} ${documentTitle}`),
+  message: i18n._(msg`${senderName} has invited you to ${actionVerb} the document "${documentTitle}".`),
 });

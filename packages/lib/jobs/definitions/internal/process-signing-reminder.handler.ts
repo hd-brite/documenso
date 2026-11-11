@@ -141,15 +141,12 @@ export const run = async ({ payload, io }: { payload: TProcessSigningReminderJob
 
   // Brite (BL-3903): name the person who sent the envelope instead of the team.
   const senderName = getEnvelopeSenderName(envelope.documentMeta, envelope.teamId);
+  const senderInvite = senderName
+    ? getSenderInviteText(i18n, { senderName, actionVerb: recipientActionVerb, documentTitle: envelope.title })
+    : null;
 
-  if (senderName) {
-    const { subject } = getSenderInviteText(i18n, {
-      senderName,
-      actionVerb: recipientActionVerb,
-      documentTitle: envelope.title,
-    });
-
-    emailSubject = i18n._(msg`Reminder: ${subject}`);
+  if (senderInvite) {
+    emailSubject = i18n._(msg`Reminder: ${senderInvite.subject}`);
   }
 
   const customEmailTemplate = {
@@ -165,9 +162,10 @@ export const run = async ({ payload, io }: { payload: TProcessSigningReminderJob
     );
   }
 
+  // Brite (BL-3903): without a custom message, the reminder body names the sender.
   const emailMessage = envelope.documentMeta.message
     ? renderCustomEmailTemplate(envelope.documentMeta.message, customEmailTemplate)
-    : undefined;
+    : senderInvite?.message;
 
   const assetBaseUrl = NEXT_PUBLIC_WEBAPP_URL() || 'http://localhost:3000';
   const signDocumentLink = `${NEXT_PUBLIC_WEBAPP_URL()}/sign/${recipient.token}`;
