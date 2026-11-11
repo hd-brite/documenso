@@ -23,7 +23,7 @@ import { DOCUMENT_AUDIT_LOG_TYPE } from '../../../types/document-audit-logs';
 import { extractDerivedDocumentEmailSettings } from '../../../types/document-email';
 import { createDocumentAuditLogData } from '../../../utils/document-audit-logs';
 import { unsafeBuildEnvelopeIdQuery } from '../../../utils/envelope';
-import { getEnvelopeSenderName, getSenderInviteText } from '../../../utils/envelope-sender';
+import { getInviteSenderName, getSenderInviteText } from '../../../utils/envelope-sender';
 import { renderCustomEmailTemplate } from '../../../utils/render-custom-email-template';
 import { renderEmailWithI18N } from '../../../utils/render-email-with-i18n';
 import type { JobRunIO } from '../../client/_internal/job';
@@ -160,7 +160,12 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
   }
 
   // Brite (BL-3903): name the person who sent the envelope instead of the team.
-  const senderName = selfSigner || isDirectTemplate ? null : getEnvelopeSenderName(documentMeta, envelope.teamId);
+  const senderName = getInviteSenderName({
+    meta: documentMeta,
+    teamId: envelope.teamId,
+    source: envelope.source,
+    isSelfSigner: selfSigner,
+  });
 
   if (senderName) {
     const senderInvite = getSenderInviteText(i18n, {

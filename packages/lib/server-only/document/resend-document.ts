@@ -25,7 +25,7 @@ import { extractDerivedDocumentEmailSettings } from '../../types/document-email'
 import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../../types/webhook-payload';
 import { isDocumentCompleted } from '../../utils/document';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
-import { getEnvelopeSenderName, getSenderInviteText } from '../../utils/envelope-sender';
+import { getInviteSenderName, getSenderInviteText } from '../../utils/envelope-sender';
 import { isRecipientEmailValidForSending } from '../../utils/recipients';
 import { renderEmailWithI18N } from '../../utils/render-email-with-i18n';
 import { buildEnvelopeEmailHeaders } from '../email/build-envelope-email-headers';
@@ -234,7 +234,12 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
       }
 
       // Brite (BL-3903): name the person who sent the envelope instead of the team.
-      const senderName = selfSigner ? null : getEnvelopeSenderName(envelope.documentMeta, envelope.teamId);
+      const senderName = getInviteSenderName({
+        meta: envelope.documentMeta,
+        teamId: envelope.teamId,
+        source: envelope.source,
+        isSelfSigner: selfSigner,
+      });
 
       if (senderName) {
         const senderInvite = getSenderInviteText(i18n, {

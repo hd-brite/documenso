@@ -24,7 +24,7 @@ import { DOCUMENT_AUDIT_LOG_TYPE, DOCUMENT_EMAIL_TYPE } from '../../../types/doc
 import { extractDerivedDocumentEmailSettings } from '../../../types/document-email';
 import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../../../types/webhook-payload';
 import { createDocumentAuditLogData } from '../../../utils/document-audit-logs';
-import { getEnvelopeSenderName, getSenderInviteText } from '../../../utils/envelope-sender';
+import { getInviteSenderName, getSenderInviteText } from '../../../utils/envelope-sender';
 import { renderCustomEmailTemplate } from '../../../utils/render-custom-email-template';
 import { renderEmailWithI18N } from '../../../utils/render-email-with-i18n';
 import type { JobRunIO } from '../../client/_internal/job';
@@ -140,7 +140,12 @@ export const run = async ({ payload, io }: { payload: TProcessSigningReminderJob
   }
 
   // Brite (BL-3903): name the person who sent the envelope instead of the team.
-  const senderName = getEnvelopeSenderName(envelope.documentMeta, envelope.teamId);
+  const senderName = getInviteSenderName({
+    meta: envelope.documentMeta,
+    teamId: envelope.teamId,
+    source: envelope.source,
+    isSelfSigner: recipient.email === envelope.user.email,
+  });
   const senderInvite = senderName
     ? getSenderInviteText(i18n, { senderName, actionVerb: recipientActionVerb, documentTitle: envelope.title })
     : null;

@@ -1,11 +1,14 @@
 import { setupI18n } from '@lingui/core';
+import { DocumentSource } from '@prisma/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   getEnvelopeSenderName,
+  getInviteSenderName,
   getSenderInviteText,
   isSenderNameAllowedForTeam,
   withEnvelopeSenderName,
+  withoutEnvelopeSenderName,
 } from './envelope-sender';
 
 const RLN_TEAM_ID = 7;
@@ -106,5 +109,53 @@ describe('getSenderInviteText', () => {
       subject: 'Shaun Ross has invited you to sign John Smith (Project 98783983)',
       message: 'Shaun Ross has invited you to sign the document "John Smith (Project 98783983)".',
     });
+  });
+});
+
+describe('getInviteSenderName', () => {
+  const meta = { senderName: 'Shaun Ross' };
+
+  it('names the sender in invites, resends and reminders of an allowed team', () => {
+    expect(
+      getInviteSenderName({ meta, teamId: RLN_TEAM_ID, source: DocumentSource.DOCUMENT, isSelfSigner: false }),
+    ).toBe('Shaun Ross');
+  });
+
+  it('keeps the upstream wording for a self-signer', () => {
+    expect(
+      getInviteSenderName({ meta, teamId: RLN_TEAM_ID, source: DocumentSource.DOCUMENT, isSelfSigner: true }),
+    ).toBeNull();
+  });
+
+  it('keeps the upstream wording for a document from a direct template link', () => {
+    expect(
+      getInviteSenderName({
+        meta,
+        teamId: RLN_TEAM_ID,
+        source: DocumentSource.TEMPLATE_DIRECT_LINK,
+        isSelfSigner: false,
+      }),
+    ).toBeNull();
+  });
+
+  it('ignores the sender name for a team that is not allowed', () => {
+    expect(getInviteSenderName({ meta, teamId: 8, source: DocumentSource.DOCUMENT, isSelfSigner: false })).toBeNull();
+  });
+});
+
+describe('withoutEnvelopeSenderName', () => {
+  it('drops the sender name and keeps every other meta field', () => {
+    const meta = { senderName: 'Shaun Ross', subject: 'Please sign', emailReplyTo: 'shaun@example.invalid' };
+
+    expect(withoutEnvelopeSenderName(meta)).toEqual({
+      senderName: null,
+      subject: 'Please sign',
+      emailReplyTo: 'shaun@example.invalid',
+    });
+  });
+
+  it('passes a missing meta through', () => {
+    expect(withoutEnvelopeSenderName(null)).toBeNull();
+    expect(withoutEnvelopeSenderName(undefined)).toBeUndefined();
   });
 });

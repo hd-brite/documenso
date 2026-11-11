@@ -202,6 +202,7 @@ export const diffDocumentMetaChanges = (
   const oldEmailId = oldData?.emailId || null;
   const oldEmailReplyTo = oldData?.emailReplyTo || null;
   const oldEmailSettings = oldData?.emailSettings || null;
+  const oldSenderName = oldData?.senderName || null;
 
   const newDateFormat = newData?.dateFormat ?? '';
   const newMessage = newData?.message ?? '';
@@ -211,6 +212,7 @@ export const diffDocumentMetaChanges = (
   const newEmailId = newData?.emailId || null;
   const newEmailReplyTo = newData?.emailReplyTo || null;
   const newEmailSettings = newData?.emailSettings || null;
+  const newSenderName = newData?.senderName || null;
 
   if (oldDateFormat !== newDateFormat) {
     diffs.push({
@@ -265,6 +267,15 @@ export const diffDocumentMetaChanges = (
       type: DOCUMENT_META_DIFF_TYPE.EMAIL_REPLY_TO,
       from: oldEmailReplyTo,
       to: newEmailReplyTo,
+    });
+  }
+
+  // Brite (BL-3903): the sender name is the From name recipients see.
+  if (oldSenderName !== newSenderName) {
+    diffs.push({
+      type: DOCUMENT_META_DIFF_TYPE.SENDER_NAME,
+      from: oldSenderName,
+      to: newSenderName,
     });
   }
 
