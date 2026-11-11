@@ -1,7 +1,7 @@
 import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-logs';
 import type { ApiRequestMetadata } from '@documenso/lib/universal/extract-request-metadata';
 import type { CreateDocumentAuditLogDataResponse } from '@documenso/lib/utils/document-audit-logs';
-import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
+import { createDocumentAuditLogData, diffSenderNameChange } from '@documenso/lib/utils/document-audit-logs';
 import { prisma } from '@documenso/prisma';
 import type { DocumentMeta, DocumentVisibility, Prisma, TemplateType } from '@prisma/client';
 import { DocumentStatus, EnvelopeType, FolderType, WebhookTriggerEvents } from '@prisma/client';
@@ -213,6 +213,22 @@ export const updateEnvelope = async ({
     throw new AppError(AppErrorCode.INVALID_BODY, {
       message: 'Envelope title can only be updated while in draft or pending status',
     });
+  }
+
+  // Brite (BL-3903): the sender name is the From name recipients see, so record its change.
+  const senderNameChanges = diffSenderNameChange(envelope.documentMeta, meta);
+
+  if (senderNameChanges.length > 0) {
+    auditLogs.push(
+      createDocumentAuditLogData({
+        type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_META_UPDATED,
+        envelopeId: envelope.id,
+        metadata: requestMetadata,
+        data: {
+          changes: senderNameChanges,
+        },
+      }),
+    );
   }
 
   if (!isTitleSame) {
