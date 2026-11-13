@@ -17,6 +17,11 @@ type SenderNameMeta = Partial<Pick<DocumentMeta, 'senderName'>> | null | undefin
  * Only teams listed in NEXT_PRIVATE_BRITE_SENDER_NAME_TEAM_IDS may use it. Any SSO user
  * gets a personal team, so without the allowlist anyone could choose the From name of
  * mail sent from our domain. Unset means no team: the field is stored but ignored.
+ *
+ * Brite (BL-3923): the From display name is "No Reply - <sender>" (see
+ * `withEnvelopeSenderName`), because mail leaves from a no-reply address. The invite wording
+ * ("<sender> has invited you to sign") keeps the plain name, and replies still go to
+ * `meta.emailReplyTo`.
  */
 export const isSenderNameAllowedForTeam = (teamId: number | null | undefined) => {
   if (teamId === null || teamId === undefined) {
@@ -52,6 +57,17 @@ export const getEnvelopeSenderName = (meta: SenderNameMeta, teamId: number | nul
   return senderName || null;
 };
 
+/** Brite (BL-3923): prefix of the From display name for envelopes that carry a sender name. */
+export const BRITE_NO_REPLY_SENDER_PREFIX = 'No Reply - ';
+
+const withNoReplyPrefix = (senderName: string) =>
+  /^no[\s-]?reply\b/i.test(senderName) ? senderName : `${BRITE_NO_REPLY_SENDER_PREFIX}${senderName}`;
+
+/**
+ * Swaps only the From display name to "No Reply - <sender name>" (not doubled when the
+ * name already starts with "No Reply"). Only for the From name: the invite wording uses
+ * `getInviteSenderName` and stays plain.
+ */
 export const withEnvelopeSenderName = <T extends { name: string; address: string }>(
   sender: T,
   meta: SenderNameMeta,
@@ -59,7 +75,7 @@ export const withEnvelopeSenderName = <T extends { name: string; address: string
 ): T => {
   const senderName = getEnvelopeSenderName(meta, teamId);
 
-  return senderName ? { ...sender, name: senderName } : sender;
+  return senderName ? { ...sender, name: withNoReplyPrefix(senderName) } : sender;
 };
 
 type InviteSenderNameOptions = {

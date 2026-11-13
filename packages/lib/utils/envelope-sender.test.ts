@@ -3,6 +3,7 @@ import { DocumentSource } from '@prisma/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  BRITE_NO_REPLY_SENDER_PREFIX,
   getEnvelopeSenderName,
   getInviteSenderName,
   getSenderInviteText,
@@ -80,11 +81,24 @@ describe('getEnvelopeSenderName', () => {
 describe('withEnvelopeSenderName', () => {
   const instanceSender = { name: 'Brite Sign', address: 'sign@hdbrite.com' };
 
-  it('keeps the sending address and uses the envelope sender name as the display name', () => {
+  it('keeps the sending address and prefixes the envelope sender name with "No Reply - " (BL-3923)', () => {
     expect(withEnvelopeSenderName(instanceSender, { senderName: 'Shaun Ross' }, RLN_TEAM_ID)).toEqual({
-      name: 'Shaun Ross',
+      name: 'No Reply - Shaun Ross',
       address: 'sign@hdbrite.com',
     });
+    expect(BRITE_NO_REPLY_SENDER_PREFIX).toBe('No Reply - ');
+  });
+
+  it('does not prefix a name that already starts with "No Reply", "No-Reply" or "Noreply"', () => {
+    for (const senderName of ['No Reply - Shaun Ross', 'no reply - x', 'NO REPLY Design Services', 'No-Reply - Shaun Ross', 'Noreply Shaun Ross']) {
+      expect(withEnvelopeSenderName(instanceSender, { senderName }, RLN_TEAM_ID).name).toBe(senderName);
+    }
+  });
+
+  it('prefixes a name that only contains "No Reply" later on', () => {
+    expect(withEnvelopeSenderName(instanceSender, { senderName: 'Shaun No Reply' }, RLN_TEAM_ID).name).toBe(
+      'No Reply - Shaun No Reply',
+    );
   });
 
   it('keeps the instance sender for a team that is not allowed', () => {
