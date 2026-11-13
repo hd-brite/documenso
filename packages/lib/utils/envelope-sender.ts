@@ -19,7 +19,7 @@ type SenderNameMeta = Partial<Pick<DocumentMeta, 'senderName'>> | null | undefin
  * mail sent from our domain. Unset means no team: the field is stored but ignored.
  *
  * Brite (BL-3923): the From display name is "No Reply - <sender>" (see
- * `withEnvelopeSenderName`), because mail leaves from a no-reply address. The invite wording
+ * `withEnvelopeSenderName`), so the From name says replies are not read there. The invite wording
  * ("<sender> has invited you to sign") keeps the plain name, and replies still go to
  * `meta.emailReplyTo`.
  */
