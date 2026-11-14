@@ -48,7 +48,19 @@ describe('getEmailContext envelope sender name (BL-3903)', () => {
   it('uses the sender name as the From name of an allowed team, keeping the address and reply-to', async () => {
     const context = await recipientContext(RLN_TEAM_ID, 'Shaun Ross');
 
-    expect(context.senderEmail).toEqual({ name: 'Shaun Ross', address: DOCUMENSO_INTERNAL_EMAIL.address });
+    expect(context.senderEmail).toEqual({ name: 'No Reply - Shaun Ross', address: DOCUMENSO_INTERNAL_EMAIL.address });
+    expect(context.replyToEmail).toBe('shaun.ross@example.invalid');
+  });
+
+  it('prefixes the From name of a non-invite recipient email (completed email call shape)', async () => {
+    // send-document-completed-emails passes the whole envelope.documentMeta, not a hand-built object.
+    const context = await getEmailContext({
+      emailType: 'RECIPIENT',
+      source: { type: 'team', teamId: RLN_TEAM_ID },
+      meta: { senderName: 'Shaun Ross', subject: '', message: '', emailReplyTo: 'shaun.ross@example.invalid' },
+    });
+
+    expect(context.senderEmail).toEqual({ name: 'No Reply - Shaun Ross', address: DOCUMENSO_INTERNAL_EMAIL.address });
     expect(context.replyToEmail).toBe('shaun.ross@example.invalid');
   });
 
