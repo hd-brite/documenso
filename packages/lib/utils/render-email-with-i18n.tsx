@@ -20,9 +20,9 @@ export const renderEmailWithI18N = async (
 
     i18n.activate(lang);
 
-    return renderWithI18N(component, { i18n, ...otherOptions });
+    return await renderWithI18N(component, { i18n, ...otherOptions });
   } catch (err) {
     console.error(err);
-    throw new Error('Failed to render email');
+    throw new Error('Failed to render email', { cause: err });
   }
 };
