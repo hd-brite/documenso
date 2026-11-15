@@ -57,12 +57,25 @@ const buildEmailColors = (brandingColors?: EmailBrandingColors): Record<string, 
   };
 };
 
+/**
+ * Remove NUL bytes from rendered email output (BL-3903).
+ *
+ * React 18 `renderToPipeableStream` (used by `@react-email/render`) writes its output in 2048
+ * byte blocks. In `writeStringChunk`, when a multi-byte character does not fit at the end of a
+ * block, React writes out the whole block, so the unused tail goes out as `\0` bytes. SendGrid
+ * stops reading at the first `\0`, which cuts the email off. `\0` is never valid in email
+ * HTML or text, so stripping it restores the intended output.
+ *
+ * https://github.com/facebook/react/blob/v18.3.1/packages/react-server/src/ReactServerStreamConfigNode.js
+ */
+export const stripNulBytes = (value: string): string => value.replaceAll('\u0000', '');
+
 export const render = async (element: React.ReactNode, options?: RenderOptions) => {
   const { branding, ...otherOptions } = options ?? {};
 
   const tailwindColors = buildEmailColors(branding?.brandingColors);
 
-  return ReactEmail.render(
+  const rendered = await ReactEmail.render(
     <BrandingProvider branding={branding}>
       <Tailwind
         config={{
@@ -78,6 +91,8 @@ export const render = async (element: React.ReactNode, options?: RenderOptions) 
     </BrandingProvider>,
     otherOptions,
   );
+
+  return stripNulBytes(rendered);
 };
 
 export const renderWithI18N = async (element: React.ReactNode, options?: RenderOptions) => {
@@ -89,7 +104,7 @@ export const renderWithI18N = async (element: React.ReactNode, options?: RenderO
 
   const tailwindColors = buildEmailColors(branding?.brandingColors);
 
-  return ReactEmail.render(
+  const rendered = await ReactEmail.render(
     <I18nProvider i18n={i18n}>
       <BrandingProvider branding={branding}>
         <Tailwind
@@ -107,4 +122,6 @@ export const renderWithI18N = async (element: React.ReactNode, options?: RenderO
     </I18nProvider>,
     otherOptions,
   );
+
+  return stripNulBytes(rendered);
 };
