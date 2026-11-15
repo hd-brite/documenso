@@ -71,7 +71,8 @@ const invite = (props: Record<string, unknown>) =>
     ...props,
   });
 
-describe('rendered emails contain no NUL bytes', () => {
+// Each sweep renders 120 x 2 emails in one test, so allow more than Vitest's 5 s default on slow runners.
+describe('rendered emails contain no NUL bytes', { timeout: 30_000 }, () => {
   it('invite with the BL-3903 dev inputs', async () => {
     const { html, text } = await renderBoth(invite({ senderName: DEV_SENDER }));
 
