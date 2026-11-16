@@ -15,7 +15,8 @@ export type TemplateBrandingLogoProps = {
  * - Otherwise the Documenso logo is shown.
  * - Brite (RLN-410): an envelope logo (`branding.envelopeLogo`) wins over both. It is never
  *   a link and is drawn 300x60 with HTML width/height attributes, because Outlook desktop
- *   ignores CSS image heights and the caller's `h-6` would shrink it to 24 px.
+ *   ignores CSS image heights and the caller's `h-6` would shrink it to 24 px. CSS keeps
+ *   its aspect ratio (`height: auto`, `max-width: 100%`) on narrow screens.
  */
 export const BRITE_ENVELOPE_LOGO_WIDTH = 300;
 export const BRITE_ENVELOPE_LOGO_HEIGHT = 60;
@@ -33,7 +34,9 @@ export const TemplateBrandingLogo = ({ assetBaseUrl, className = 'mb-4 h-6' }: T
         className="mb-4"
         style={{
           width: `${BRITE_ENVELOPE_LOGO_WIDTH}px`,
-          height: `${BRITE_ENVELOPE_LOGO_HEIGHT}px`,
+          // Outlook desktop sizes from the attributes; everyone else keeps the
+          // aspect ratio when the column is narrower than 300 px.
+          height: 'auto',
           maxWidth: '100%',
         }}
       />

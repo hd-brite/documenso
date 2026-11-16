@@ -74,6 +74,8 @@ describe.each(templates)('%s email logo', (_name, template) => {
     expect(logo).toBeDefined();
     expect(logo).toContain('width="300"');
     expect(logo).toContain('height="60"');
+    expect(logo).toContain('height:auto');
+    expect(logo).toContain('max-width:100%');
     expect(logo).not.toContain('h-6');
     expect(html).not.toContain(TEAM_LOGO);
     expect(html).not.toMatch(new RegExp(`<a[^>]*href="https://brand.example.com"[^>]*>\\s*<img[^>]*${THD_LOGO}`));
