@@ -59,6 +59,41 @@ export const putPdfFile = async (file: File, options?: PutFileOptions) => {
   return result;
 };
 
+export type TUploadImageResponse = {
+  type: DocumentDataType;
+  data: string;
+};
+
+/**
+ * Uploads an image (a branding logo) through the server.
+ *
+ * Brite: the browser must never PUT to a presigned storage URL. The storage
+ * endpoint is an in-cluster http address (http://documenso-minio:9000) that the
+ * browser cannot reach and blocks as mixed content on the https app. The
+ * server sends the bytes to storage instead, the same way `putPdfFile` does.
+ */
+export const putImageFile = async (file: File, options?: PutFileOptions): Promise<TUploadImageResponse> => {
+  const formData = new FormData();
+
+  const buffer = await file.arrayBuffer();
+  const blob = new Blob([buffer], { type: file.type });
+
+  formData.append('file', new File([blob], file.name, { type: file.type }));
+
+  const response = await fetch('/api/files/upload-image', {
+    method: 'POST',
+    headers: buildUploadAuthHeaders(options),
+    body: formData,
+  });
+
+  if (!response.ok) {
+    console.error('Image upload failed:', response.status, response.statusText);
+    throw new AppError('UPLOAD_FAILED');
+  }
+
+  return (await response.json()) as TUploadImageResponse;
+};
+
 /**
  * Uploads a file to the appropriate storage location.
  */

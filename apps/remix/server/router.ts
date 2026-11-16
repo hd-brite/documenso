@@ -14,10 +14,12 @@ import {
 import { TelemetryClient } from '@documenso/lib/server-only/telemetry/telemetry-client';
 import { migrateDeletedAccountServiceAccount } from '@documenso/lib/server-only/user/service-accounts/deleted-account';
 import { migrateLegacyServiceAccount } from '@documenso/lib/server-only/user/service-accounts/legacy-service-account';
+import { IMAGE_UPLOAD_SIZE_LIMIT_BYTES } from '@documenso/lib/universal/upload/image-upload';
 import { env } from '@documenso/lib/utils/env';
 import { logger } from '@documenso/lib/utils/logger';
 import { openApiDocument } from '@documenso/trpc/server/open-api';
 import { Hono } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import { contextStorage } from 'hono/context-storage';
 import { cors } from 'hono/cors';
 import type { RequestIdVariables } from 'hono/request-id';
@@ -106,6 +108,16 @@ app.route('/api/auth', auth);
 // Files route.
 app.use('/api/files/upload-pdf', fileRateLimitMiddleware);
 app.use('/api/files/presigned-post-url', fileRateLimitMiddleware);
+app.use('/api/files/upload-image', fileRateLimitMiddleware);
+// Brite: refuse oversized logo uploads before the multipart body is buffered.
+// 64 KB on top of the file limit leaves room for the multipart headers.
+app.use(
+  '/api/files/upload-image',
+  bodyLimit({
+    maxSize: IMAGE_UPLOAD_SIZE_LIMIT_BYTES + 64 * 1024,
+    onError: (c) => c.json({ error: 'File too large' }, 413),
+  }),
+);
 app.route('/api/files', filesRoute);
 
 // AI route.

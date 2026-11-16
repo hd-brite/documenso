@@ -2,7 +2,8 @@ import { getOptionalSession } from '@documenso/auth/server/lib/utils/get-session
 import { APP_DOCUMENT_UPLOAD_SIZE_LIMIT } from '@documenso/lib/constants/app';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { verifyEmbeddingPresignToken } from '@documenso/lib/server-only/embedding-presign/verify-embedding-presign-token';
-import { putNormalizedPdfFileServerSide } from '@documenso/lib/universal/upload/put-file.server';
+import { hasImageSignature, validateImageUpload } from '@documenso/lib/universal/upload/image-upload';
+import { putFileServerSide, putNormalizedPdfFileServerSide } from '@documenso/lib/universal/upload/put-file.server';
 import { getPresignPostUrl } from '@documenso/lib/universal/upload/server-actions';
 import { prisma } from '@documenso/prisma';
 import { sValidator } from '@hono/standard-validator';
@@ -20,6 +21,7 @@ import {
   ZGetEnvelopeItemFileTokenDownloadRequestParamsSchema,
   ZGetEnvelopeItemFileTokenRequestParamsSchema,
   ZGetPresignedPostUrlRequestSchema,
+  ZUploadImageRequestSchema,
   ZUploadPdfRequestSchema,
 } from './files.types';
 import getEnvelopeItemPdfRoute from './routes/get-envelope-item-pdf';
@@ -58,6 +60,53 @@ export const filesRoute = new Hono<HonoEnv>()
       return c.json(result);
     } catch (error) {
       console.error('Upload failed:', error);
+      return c.json({ error: 'Upload failed' }, 500);
+    }
+  })
+  /**
+   * Brite: uploads a branding image through the server. The browser cannot
+   * PUT to the presigned storage URL (in-cluster http address, blocked as
+   * mixed content), so logos take the same server path as PDFs.
+   */
+  .post('/upload-image', sValidator('form', ZUploadImageRequestSchema), async (c) => {
+    try {
+      const userId = await resolveFileUploadUserId(c);
+
+      if (!userId) {
+        return c.json({ error: 'Unauthorized' }, 401);
+      }
+
+      const { file } = c.req.valid('form');
+
+      const rejection = validateImageUpload(file);
+
+      if (rejection === 'UNSUPPORTED_TYPE') {
+        return c.json({ error: 'Unsupported content type' }, 400);
+      }
+
+      if (rejection === 'EMPTY') {
+        return c.json({ error: 'No file provided' }, 400);
+      }
+
+      if (rejection === 'TOO_LARGE') {
+        return c.json({ error: 'File too large' }, 400);
+      }
+
+      const bytes = new Uint8Array(await file.arrayBuffer());
+
+      if (!hasImageSignature(bytes)) {
+        return c.json({ error: 'Unsupported content type' }, 400);
+      }
+
+      const { type, data } = await putFileServerSide({
+        name: file.name,
+        type: file.type,
+        arrayBuffer: async () => Promise.resolve(bytes.buffer),
+      });
+
+      return c.json({ type, data });
+    } catch (error) {
+      console.error('Image upload failed:', error);
       return c.json({ error: 'Upload failed' }, 500);
     }
   })
