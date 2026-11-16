@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getEnvelopeEmailLogoUrl, isEmailLogoAllowedForTeam, withoutEnvelopeEmailLogo } from './envelope-email-logo';
+import {
+  envelopeEmailLogoForDuplicate,
+  getEnvelopeEmailLogoUrl,
+  isEmailLogoAllowedForTeam,
+  withoutEnvelopeEmailLogo,
+} from './envelope-email-logo';
 
 const RLN_TEAM_ID = 7;
 const SALES_TEAM_ID = 13;
@@ -127,5 +132,21 @@ describe('withoutEnvelopeEmailLogo', () => {
   it('passes null and undefined through', () => {
     expect(withoutEnvelopeEmailLogo(null)).toBeNull();
     expect(withoutEnvelopeEmailLogo(undefined)).toBeUndefined();
+  });
+});
+
+describe('envelopeEmailLogoForDuplicate', () => {
+  it('keeps the logo when the copy stays in the same team', () => {
+    expect(envelopeEmailLogoForDuplicate({ emailLogoUrl: THD_LOGO, subject: 'Hi' }, RLN_TEAM_ID, RLN_TEAM_ID)).toEqual({
+      emailLogoUrl: THD_LOGO,
+      subject: 'Hi',
+    });
+  });
+
+  it('drops the logo when an organisation template is copied into another team', () => {
+    expect(envelopeEmailLogoForDuplicate({ emailLogoUrl: THD_LOGO, subject: 'Hi' }, RLN_TEAM_ID, 42)).toEqual({
+      emailLogoUrl: null,
+      subject: 'Hi',
+    });
   });
 });

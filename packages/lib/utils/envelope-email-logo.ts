@@ -115,3 +115,14 @@ export const getEnvelopeEmailLogoUrl = (meta: EmailLogoMeta, teamId: number | nu
  */
 export const withoutEnvelopeEmailLogo = <T extends { emailLogoUrl?: string | null }>(meta: T | null | undefined) =>
   meta ? { ...meta, emailLogoUrl: null } : meta;
+
+/**
+ * Meta for a duplicated envelope: the logo stays only when the copy stays in the source
+ * team. Copying an organisation template into another team drops it, so one team's
+ * partner logo never follows the copy into another team.
+ */
+export const envelopeEmailLogoForDuplicate = <T extends { emailLogoUrl?: string | null }>(
+  meta: T,
+  sourceTeamId: number,
+  targetTeamId: number,
+) => (sourceTeamId === targetTeamId ? meta : { ...meta, emailLogoUrl: null });
