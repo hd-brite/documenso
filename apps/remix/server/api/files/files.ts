@@ -2,7 +2,7 @@ import { getOptionalSession } from '@documenso/auth/server/lib/utils/get-session
 import { APP_DOCUMENT_UPLOAD_SIZE_LIMIT } from '@documenso/lib/constants/app';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { verifyEmbeddingPresignToken } from '@documenso/lib/server-only/embedding-presign/verify-embedding-presign-token';
-import { validateImageUpload } from '@documenso/lib/universal/upload/image-upload';
+import { hasImageSignature, validateImageUpload } from '@documenso/lib/universal/upload/image-upload';
 import { putFileServerSide, putNormalizedPdfFileServerSide } from '@documenso/lib/universal/upload/put-file.server';
 import { getPresignPostUrl } from '@documenso/lib/universal/upload/server-actions';
 import { prisma } from '@documenso/prisma';
@@ -92,7 +92,17 @@ export const filesRoute = new Hono<HonoEnv>()
         return c.json({ error: 'File too large' }, 400);
       }
 
-      const { type, data } = await putFileServerSide(file);
+      const bytes = new Uint8Array(await file.arrayBuffer());
+
+      if (!hasImageSignature(bytes)) {
+        return c.json({ error: 'Unsupported content type' }, 400);
+      }
+
+      const { type, data } = await putFileServerSide({
+        name: file.name,
+        type: file.type,
+        arrayBuffer: async () => Promise.resolve(bytes.buffer),
+      });
 
       return c.json({ type, data });
     } catch (error) {

@@ -80,6 +80,22 @@ test.describe('File upload endpoint authorization', () => {
     expect(res.status()).toBe(400);
   });
 
+  test('rejects an upload-image request whose bytes are not an image', async ({ request }) => {
+    const { user, team } = await seedUser();
+    const presignToken = await createPresignTokenForUser(user.id, team.id);
+
+    const formData = new FormData();
+    formData.append('file', new File([examplePdf], 'logo.png', { type: 'image/png' }));
+
+    const res = await request.post(`${WEBAPP_BASE_URL}/api/files/upload-image`, {
+      headers: { Authorization: `Bearer ${presignToken}` },
+      multipart: formData,
+    });
+
+    expect(res.ok()).toBeFalsy();
+    expect(res.status()).toBe(400);
+  });
+
   test('stores an upload-image request authorized by a valid presign token', async ({ request }) => {
     const { user, team } = await seedUser();
     const presignToken = await createPresignTokenForUser(user.id, team.id);
