@@ -85,6 +85,7 @@ export const ZDocumentMetaDiffTypeSchema = z.enum([
   'EMAIL_REPLY_TO',
   'EMAIL_SETTINGS',
   'SENDER_NAME', // Brite (BL-3903)
+  'EMAIL_LOGO_URL', // Brite (RLN-410)
 ]);
 
 export const ZFieldDiffTypeSchema = z.enum(['DIMENSION', 'POSITION']);
@@ -134,6 +135,7 @@ export const ZDocumentAuditLogDocumentMetaSchema = z.union([
       z.literal(DOCUMENT_META_DIFF_TYPE.EMAIL_REPLY_TO),
       z.literal(DOCUMENT_META_DIFF_TYPE.EMAIL_SETTINGS),
       z.literal(DOCUMENT_META_DIFF_TYPE.SENDER_NAME),
+      z.literal(DOCUMENT_META_DIFF_TYPE.EMAIL_LOGO_URL),
     ]),
     from: z.string().nullable(),
     to: z.string().nullable(),

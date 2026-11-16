@@ -580,6 +580,9 @@ model DocumentMeta {
   /// Brite (BL-3903): display name of the person who sent the envelope, used as the
   /// From name and in the invite wording of recipient emails. Null keeps upstream wording.
   senderName    String?
+  /// Brite (RLN-410): https URL of the logo shown at the top of recipient emails instead
+  /// of the team logo (allowlisted teams and hosts only). Null keeps the team logo.
+  emailLogoUrl  String?
 
   envelopeExpirationPeriod Json? /// [EnvelopeExpirationPeriod] @zod.custom.use(ZEnvelopeExpirationPeriodSchema)
 

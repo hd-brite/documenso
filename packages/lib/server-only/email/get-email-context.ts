@@ -15,6 +15,7 @@ import { match, P } from 'ts-pattern';
 import { IS_BILLING_ENABLED } from '../../constants/app';
 import { DOCUMENSO_INTERNAL_EMAIL } from '../../constants/email';
 import { AppError, AppErrorCode } from '../../errors/app-error';
+import { getEnvelopeEmailLogoUrl } from '../../utils/envelope-email-logo';
 import { withEnvelopeSenderName } from '../../utils/envelope-sender';
 import { logger } from '../../utils/logger';
 import {
@@ -24,7 +25,9 @@ import {
 import { extractDerivedTeamSettings } from '../../utils/teams';
 import { resolveEmailTransport } from './resolve-email-transport';
 
-type EmailMetaOption = Partial<Pick<DocumentMeta, 'emailId' | 'emailReplyTo' | 'language' | 'senderName'>>;
+type EmailMetaOption = Partial<
+  Pick<DocumentMeta, 'emailId' | 'emailReplyTo' | 'language' | 'senderName' | 'emailLogoUrl'>
+>;
 
 type BaseGetEmailContextOptions = {
   /**
@@ -147,6 +150,13 @@ export const getEmailContext = async (options: GetEmailContextOptions): Promise<
 
   // Brite (BL-3903): only a team source can be allowlisted for envelope sender names.
   const senderNameTeamId = source.type === 'team' ? source.teamId : null;
+
+  // Brite (RLN-410): an allowlisted envelope logo replaces the team logo on every recipient email.
+  const envelopeLogo = getEnvelopeEmailLogoUrl(meta, senderNameTeamId);
+
+  if (envelopeLogo) {
+    emailContext.branding = { ...emailContext.branding, envelopeLogo };
+  }
 
   const senderEmailId = match(meta?.emailId)
     .with(P.string, (emailId) => emailId) // Explicit string means to use the provided email ID.

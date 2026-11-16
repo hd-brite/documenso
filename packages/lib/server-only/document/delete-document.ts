@@ -226,6 +226,8 @@ const handleDocumentOwnerDelete = async ({ envelope, user, requestMetadata }: Ha
               emailId: envelope.documentMeta.emailId,
               emailReplyTo: envelope.documentMeta.emailReplyTo,
               language: emailLanguage,
+              senderName: envelope.documentMeta.senderName,
+              emailLogoUrl: envelope.documentMeta.emailLogoUrl,
             }
           : null,
         recipients: recipientsToNotify,
