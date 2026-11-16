@@ -10,6 +10,10 @@ export const ZUploadPdfResponseSchema = DocumentDataSchema.pick({
   id: true,
 });
 
+export const ZUploadImageRequestSchema = z.object({
+  file: z.instanceof(File),
+});
+
 export type TUploadPdfRequest = z.infer<typeof ZUploadPdfRequestSchema>;
 export type TUploadPdfResponse = z.infer<typeof ZUploadPdfResponseSchema>;
 

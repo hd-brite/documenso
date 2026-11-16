@@ -34,7 +34,69 @@ const buildPdfFormData = () => {
   return formData;
 };
 
+// A 1x1 transparent PNG.
+const examplePng = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64',
+);
+
+const buildImageFormData = (type = 'image/png', name = 'logo.png') => {
+  const formData = new FormData();
+  formData.append('file', new File([examplePng], name, { type }));
+
+  return formData;
+};
+
 test.describe('File upload endpoint authorization', () => {
+  test('rejects an unauthenticated upload-image request', async ({ request }) => {
+    const res = await request.post(`${WEBAPP_BASE_URL}/api/files/upload-image`, {
+      multipart: buildImageFormData(),
+    });
+
+    expect(res.ok()).toBeFalsy();
+    expect(res.status()).toBe(401);
+  });
+
+  test('rejects an upload-image request with an invalid presign token', async ({ request }) => {
+    const res = await request.post(`${WEBAPP_BASE_URL}/api/files/upload-image`, {
+      headers: { Authorization: 'Bearer not-a-real-token' },
+      multipart: buildImageFormData(),
+    });
+
+    expect(res.ok()).toBeFalsy();
+    expect(res.status()).toBe(401);
+  });
+
+  test('rejects an upload-image request with a non-image content type', async ({ request }) => {
+    const { user, team } = await seedUser();
+    const presignToken = await createPresignTokenForUser(user.id, team.id);
+
+    const res = await request.post(`${WEBAPP_BASE_URL}/api/files/upload-image`, {
+      headers: { Authorization: `Bearer ${presignToken}` },
+      multipart: buildPdfFormData(),
+    });
+
+    expect(res.ok()).toBeFalsy();
+    expect(res.status()).toBe(400);
+  });
+
+  test('stores an upload-image request authorized by a valid presign token', async ({ request }) => {
+    const { user, team } = await seedUser();
+    const presignToken = await createPresignTokenForUser(user.id, team.id);
+
+    const res = await request.post(`${WEBAPP_BASE_URL}/api/files/upload-image`, {
+      headers: { Authorization: `Bearer ${presignToken}` },
+      multipart: buildImageFormData(),
+    });
+
+    expect(res.status()).toBe(200);
+
+    const body = await res.json();
+    expect(['BYTES_64', 'S3_PATH']).toContain(body.type);
+    expect(typeof body.data).toBe('string');
+    expect(body.data.length).toBeGreaterThan(0);
+  });
+
   test('rejects an unauthenticated upload-pdf request', async ({ request }) => {
     const res = await request.post(`${WEBAPP_BASE_URL}/api/files/upload-pdf`, {
       multipart: buildPdfFormData(),

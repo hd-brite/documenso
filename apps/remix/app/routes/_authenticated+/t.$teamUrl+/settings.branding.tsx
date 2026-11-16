@@ -1,6 +1,6 @@
 import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
 import { IS_BILLING_ENABLED } from '@documenso/lib/constants/app';
-import { putFile } from '@documenso/lib/universal/upload/put-file';
+import { putImageFile } from '@documenso/lib/universal/upload/put-file';
 import { canExecuteOrganisationAction } from '@documenso/lib/utils/organisations';
 import type { SanitizeBrandingCssWarning } from '@documenso/lib/utils/sanitize-branding-css';
 import { trpc } from '@documenso/trpc/react';
@@ -51,7 +51,7 @@ export default function TeamsSettingsPage() {
       let uploadedBrandingLogo: string | undefined;
 
       if (brandingLogo) {
-        uploadedBrandingLogo = JSON.stringify(await putFile(brandingLogo));
+        uploadedBrandingLogo = JSON.stringify(await putImageFile(brandingLogo));
       }
 
       // Empty the branding logo if the user unsets it.
