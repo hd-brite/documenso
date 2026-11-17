@@ -86,3 +86,67 @@ describe('getEmailContext envelope sender name (BL-3903)', () => {
     expect(context.senderEmail).toEqual(DOCUMENSO_INTERNAL_EMAIL);
   });
 });
+
+describe('getEmailContext envelope email logo (RLN-410)', () => {
+  const THD_LOGO = 'https://hdbrite.com/email-assets/rln/email-logo-thd-v1.png';
+  const SALES_TEAM_ID = 13;
+
+  beforeEach(() => {
+    vi.stubEnv('NEXT_PRIVATE_BRITE_EMAIL_LOGO_TEAM_IDS', String(RLN_TEAM_ID));
+    vi.stubEnv('NEXT_PRIVATE_BRITE_EMAIL_LOGO_URL_PREFIXES', 'https://hdbrite.com/email-assets/rln/');
+    findTeam.mockImplementation(async ({ where }: { where: { id: number } }) => teamRow(where.id));
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    findTeam.mockReset();
+  });
+
+  const logoContext = (
+    teamId: number,
+    emailLogoUrl: string | null,
+    emailType: 'RECIPIENT' | 'INTERNAL' = 'RECIPIENT',
+  ) =>
+    getEmailContext({
+      emailType,
+      source: { type: 'team', teamId },
+      meta: { emailLogoUrl, senderName: null, emailReplyTo: null },
+    });
+
+  it('puts the envelope logo on the branding of an allowed team', async () => {
+    const context = await logoContext(RLN_TEAM_ID, THD_LOGO);
+
+    expect(context.branding.envelopeLogo).toBe(THD_LOGO);
+  });
+
+  it('ignores the envelope logo for a team that is not allowed (Brite Sales)', async () => {
+    const context = await logoContext(SALES_TEAM_ID, THD_LOGO);
+
+    expect(context.branding.envelopeLogo).toBeUndefined();
+  });
+
+  it('ignores a logo outside the allowed prefixes', async () => {
+    const context = await logoContext(RLN_TEAM_ID, 'https://evil.example/email-assets/rln/a.png');
+
+    expect(context.branding.envelopeLogo).toBeUndefined();
+  });
+
+  it('shows no envelope logo when the team allowlist is unset (kill switch)', async () => {
+    vi.stubEnv('NEXT_PRIVATE_BRITE_EMAIL_LOGO_TEAM_IDS', '');
+    const context = await logoContext(RLN_TEAM_ID, THD_LOGO);
+
+    expect(context.branding.envelopeLogo).toBeUndefined();
+  });
+
+  it('keeps the team branding when the envelope has no logo', async () => {
+    const context = await logoContext(RLN_TEAM_ID, null);
+
+    expect(context.branding.envelopeLogo).toBeUndefined();
+  });
+
+  it('never applies the envelope logo to internal emails', async () => {
+    const context = await logoContext(RLN_TEAM_ID, THD_LOGO, 'INTERNAL');
+
+    expect(context.branding.envelopeLogo).toBeUndefined();
+  });
+});

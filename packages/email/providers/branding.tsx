@@ -8,6 +8,11 @@ type BrandingContextValue = {
   brandingCompanyDetails: string;
   brandingHidePoweredBy: boolean;
   brandingColors?: EmailBrandingColors;
+  /**
+   * Brite (RLN-410): the envelope's own logo (`DocumentMeta.emailLogoUrl`), already checked
+   * against the team and URL allowlists. When set it replaces the team and Brite logo.
+   */
+  envelopeLogo?: string;
 };
 
 const BrandingContext = createContext<BrandingContextValue | undefined>(undefined);

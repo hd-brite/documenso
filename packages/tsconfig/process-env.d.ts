@@ -89,6 +89,17 @@ declare namespace NodeJS {
      * `meta.senderName`. Unset or empty means no team (the field is ignored).
      */
     NEXT_PRIVATE_BRITE_SENDER_NAME_TEAM_IDS?: string;
+    /**
+     * Brite (RLN-410): comma-separated team ids whose envelopes may set
+     * `meta.emailLogoUrl`. Unset or empty means no team (the field is ignored).
+     */
+    NEXT_PRIVATE_BRITE_EMAIL_LOGO_TEAM_IDS?: string;
+    /**
+     * Brite (RLN-410): comma-separated https URL prefixes (origin + path ending in
+     * `/`) an envelope email logo must start with, for example
+     * `https://hdbrite.com/email-assets/rln/`. Unset or empty means no logo is shown.
+     */
+    NEXT_PRIVATE_BRITE_EMAIL_LOGO_URL_PREFIXES?: string;
     NEXT_PRIVATE_SMTP_FROM_ADDRESS?: string;
 
     NEXT_PUBLIC_DISABLE_SIGNUP?: string;

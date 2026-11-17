@@ -40,6 +40,7 @@ import {
   extractDocumentAuthMethods,
 } from '../../utils/document-auth';
 import { mapSecondaryIdToTemplateId } from '../../utils/envelope';
+import { withoutEnvelopeEmailLogo } from '../../utils/envelope-email-logo';
 import { withoutEnvelopeSenderName } from '../../utils/envelope-sender';
 import { sendDocument } from '../document/send-document';
 import { validateFieldAuth } from '../document/validate-field-auth';
@@ -209,10 +210,11 @@ export const createDocumentFromDirectTemplate = async ({
     strict: false,
   });
 
-  // Brite (BL-3903): a template's sender name never carries over to the documents made from it.
+  // Brite (BL-3903, RLN-410): a template's sender name and email logo never carry over to the
+  // documents made from a public direct link.
   const derivedDocumentMeta = extractDerivedDocumentMeta(
     settings,
-    withoutEnvelopeSenderName(directTemplateEnvelope.documentMeta),
+    withoutEnvelopeEmailLogo(withoutEnvelopeSenderName(directTemplateEnvelope.documentMeta)),
     signatureLevel,
   );
 

@@ -8,10 +8,11 @@ import { ZSignatureLevelSchema } from '../../types/signature-level';
 import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../../types/webhook-payload';
 import { nanoid, prefixedId } from '../../universal/id';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
+import { envelopeEmailLogoForDuplicate } from '../../utils/envelope-email-logo';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 import { incrementDocumentId, incrementTemplateId } from '../envelope/increment-id';
-import { resolveSignatureLevel } from '../signature-level/resolve-signature-level';
 import { assertOrganisationRatesAndLimits } from '../rate-limit/assert-organisation-rates-and-limits';
+import { resolveSignatureLevel } from '../signature-level/resolve-signature-level';
 import { triggerWebhook } from '../webhooks/trigger/trigger-webhook';
 
 export interface DuplicateEnvelopeOptions {
@@ -108,7 +109,7 @@ export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: Dupli
         })),
     prisma.documentMeta.create({
       data: {
-        ...omit(envelope.documentMeta, ['id']),
+        ...envelopeEmailLogoForDuplicate(omit(envelope.documentMeta, ['id']), envelope.teamId, teamId),
         emailSettings: envelope.documentMeta.emailSettings || undefined,
       },
     }),

@@ -64,6 +64,7 @@ export const extractDerivedDocumentMeta = (
     emailId: meta.emailId ?? settings.emailId,
     emailReplyTo: meta.emailReplyTo ?? settings.emailReplyTo,
     senderName: meta.senderName || null,
+    emailLogoUrl: meta.emailLogoUrl || null,
     emailSettings: meta.emailSettings || settings.emailDocumentSettings || DEFAULT_DOCUMENT_EMAIL_SETTINGS,
 
     // Envelope expiration.

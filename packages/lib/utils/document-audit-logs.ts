@@ -203,6 +203,7 @@ export const diffDocumentMetaChanges = (
   const oldEmailReplyTo = oldData?.emailReplyTo || null;
   const oldEmailSettings = oldData?.emailSettings || null;
   const oldSenderName = oldData?.senderName || null;
+  const oldEmailLogoUrl = oldData?.emailLogoUrl || null;
 
   const newDateFormat = newData?.dateFormat ?? '';
   const newMessage = newData?.message ?? '';
@@ -213,6 +214,7 @@ export const diffDocumentMetaChanges = (
   const newEmailReplyTo = newData?.emailReplyTo || null;
   const newEmailSettings = newData?.emailSettings || null;
   const newSenderName = newData?.senderName || null;
+  const newEmailLogoUrl = newData?.emailLogoUrl || null;
 
   if (oldDateFormat !== newDateFormat) {
     diffs.push({
@@ -276,6 +278,15 @@ export const diffDocumentMetaChanges = (
       type: DOCUMENT_META_DIFF_TYPE.SENDER_NAME,
       from: oldSenderName,
       to: newSenderName,
+    });
+  }
+
+  // Brite (RLN-410): the envelope logo is the picture at the top of every recipient email.
+  if (oldEmailLogoUrl !== newEmailLogoUrl) {
+    diffs.push({
+      type: DOCUMENT_META_DIFF_TYPE.EMAIL_LOGO_URL,
+      from: oldEmailLogoUrl,
+      to: newEmailLogoUrl,
     });
   }
 

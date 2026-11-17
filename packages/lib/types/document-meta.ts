@@ -92,6 +92,16 @@ export const ZDocumentMetaSenderNameSchema = z
     'Display name of the person sending the document. Used as the From name and in the invite wording of recipient emails.',
   );
 
+export const ZDocumentMetaEmailLogoUrlSchema = z
+  .string()
+  .trim()
+  .max(2048)
+  .url()
+  .refine((value) => value.startsWith('https://'), { message: 'The email logo must be an https:// URL.' })
+  .describe(
+    'https URL of the logo shown at the top of recipient emails instead of the team logo. Only used for allowlisted teams and hosts.',
+  );
+
 export const ZDocumentMetaMessageSchema = z
   .string()
   .max(5000)
@@ -134,6 +144,7 @@ export const ZDocumentMetaCreateSchema = z.object({
   emailId: z.string().nullish(),
   emailReplyTo: zEmail().nullish(),
   senderName: ZDocumentMetaSenderNameSchema.nullish(),
+  emailLogoUrl: ZDocumentMetaEmailLogoUrlSchema.nullish(),
   emailSettings: ZDocumentEmailSettingsSchema.nullish(),
   envelopeExpirationPeriod: ZEnvelopeExpirationPeriod.nullish(),
   reminderSettings: ZEnvelopeReminderSettings.nullish(),

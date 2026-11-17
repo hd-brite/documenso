@@ -19,6 +19,10 @@ const SEND_DOCUMENT_DELETED_EMAILS_JOB_DEFINITION_SCHEMA = z.object({
       emailId: z.string().nullable().optional(),
       emailReplyTo: z.string().nullable().optional(),
       language: z.string().optional(),
+      // Brite (BL-3903, RLN-410): the sender name and envelope logo, so the deleted email
+      // shows the same From name and logo as every other email of the envelope.
+      senderName: z.string().nullable().optional(),
+      emailLogoUrl: z.string().nullable().optional(),
     })
     .nullable(),
   recipients: z
